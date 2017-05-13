@@ -1,15 +1,16 @@
 "use strict";
 
-let documentTitleCallback: (title: string) => string = undefined;
+let documentTitleCallback: (title: string | ng.IRootScopeService) => string = undefined;
 let defaultDocumentTitle = document.title;
 
 angular.module("ui.router.title", ["ui.router"])
 	.provider("$title", function $titleProvider() {
 		return {
-			documentTitle: (cb) => {
+			documentTitle: (cb: ($rootScope: ng.IRootScopeService) => string) => {
+				cb.$inject = ["$rootScope"];
 				documentTitleCallback = cb;
 			},
-			$get: ["$state", ($state: ng.ui.IStateService): ng.ui.ITitleService => {
+			$get: ["$state", ($state: ng.ui.IStateService) => {
 				return {
 					title: () => getTitleValue($state.$current.locals.globals["$title"]),
 					breadCrumbs: () => {
@@ -31,16 +32,16 @@ angular.module("ui.router.title", ["ui.router"])
 			}]
 		};
 	})
-	.run(["$rootScope", "$timeout", "$title", "$injector", function(
+	.run(["$rootScope", "$timeout", "$title", "$injector", function (
 		$rootScope: ng.IRootScopeService,
 		$timeout: ng.ITimeoutService,
-		$title: ng.ui.ITitleService,
+		$title,
 		$injector
 	) {
 
-		$rootScope.$on("$stateChangeSuccess", function() {
+		$rootScope.$on("$stateChangeSuccess", function () {
 			var title = $title.title();
-			$timeout(function() {
+			$timeout(function () {
 				$rootScope.$title = title;
 				const documentTitle = documentTitleCallback ? $injector.invoke(documentTitleCallback) : title || defaultDocumentTitle;
 				document.title = documentTitle;
